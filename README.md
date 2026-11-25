@@ -14,6 +14,8 @@ curl -fsSL https://raw.githubusercontent.com/nikolaSour/proxyfile/main/install.s
 
 如果以普通用户登录，使用 `sudo bash install.sh` 执行下载好的脚本。自动化部署可通过 `bash install.sh site.example.com` 直接传入域名。
 
+如果系统自动更新占用了 APT 锁，脚本会等待锁释放，单次最多等待 5 分钟。等待超时后，等系统更新结束，再用同一域名重跑安装。
+
 ## 接入 REALITY
 
 本机 HTTPS 验证通过后，在 3X-UI 或 Xray 的 REALITY 入站填入脚本输出的域名和目标地址。公网 TCP 443 由 Xray 监听。

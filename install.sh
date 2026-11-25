@@ -10,6 +10,7 @@ readonly PACKAGE_MASK=/etc/systemd/system/caddy.service
 readonly CADDY_REPO=https://dl.cloudsmith.io/public/caddy/stable
 readonly CADDY_KEY=/usr/share/keyrings/caddy-stable-archive-keyring.gpg
 readonly CADDY_LIST=/etc/apt/sources.list.d/caddy-stable.list
+readonly APT_LOCK_TIMEOUT=300
 
 fail() {
     printf '错误：%s\n' "$*" >&2
@@ -67,12 +68,39 @@ ExecReload=/usr/bin/caddy reload --config $CONFIG --adapter caddyfile
 EOF
 }
 
+apt_update() {
+    local errors="$workdir/apt-update.stderr" waited=0 status
+    while :; do
+        if apt-get update 2>"$errors"; then
+            cat "$errors" >&2
+            return 0
+        else
+            status=$?
+        fi
+        # APT's dpkg lock timeout does not apply to the package index lock.
+        if (( waited >= APT_LOCK_TIMEOUT )) || ! grep -Eq \
+            '^E: Could not get lock /var/lib/apt/lists/lock(\. It is held by process | - open \(11:)' "$errors"; then
+            cat "$errors" >&2
+            return "$status"
+        fi
+        if (( waited == 0 )); then
+            printf 'APT 软件包索引正在使用中，最多等待 %s 秒…\n' "$APT_LOCK_TIMEOUT" >&2
+        fi
+        sleep 5
+        waited=$((waited + 5))
+    done
+}
+
+apt_install() {
+    apt-get -o "DPkg::Lock::Timeout=$APT_LOCK_TIMEOUT" install -y --no-install-recommends "$@"
+}
+
 install_caddy() {
     # Prevent the packaged default configuration from opening port 80.
     systemctl mask caddy.service
     if [[ ! -f "$CADDY_KEY" || ! -f "$CADDY_LIST" ]]; then
-        apt-get update
-        apt-get install -y --no-install-recommends ca-certificates gnupg
+        apt_update
+        apt_install ca-certificates gnupg
         if [[ ! -f "$CADDY_KEY" ]]; then
             curl -fsSL "$CADDY_REPO/gpg.key" -o "$workdir/caddy.key"
             gpg --batch --dearmor -o "$workdir/caddy.gpg" "$workdir/caddy.key"
@@ -83,8 +111,8 @@ install_caddy() {
             install -m 0644 "$workdir/caddy.list" "$CADDY_LIST"
         fi
     fi
-    apt-get update
-    apt-get install -y --no-install-recommends caddy
+    apt_update
+    apt_install caddy
 }
 
 install_default_page() {
@@ -269,8 +297,8 @@ main() {
 
     if ! systemctl is-active --quiet caddy.service; then
         if ! command -v ss >/dev/null; then
-            apt-get update
-            apt-get install -y --no-install-recommends iproute2
+            apt_update
+            apt_install iproute2
         fi
         local listeners
         listeners=$(ss -Hltn "sport = :80 or sport = :$SITE_PORT or sport = :2019")
