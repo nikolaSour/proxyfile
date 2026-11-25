@@ -87,6 +87,130 @@ install_caddy() {
     apt-get install -y --no-install-recommends caddy
 }
 
+install_default_page() {
+    local index_file="$1" checksum
+    [[ ! -L "$index_file" ]] || return 0
+    if [[ -e "$index_file" ]]; then
+        [[ -f "$index_file" ]] || return 0
+        checksum=$(sha256sum < "$index_file")
+        # Upgrade the original bundled homepage only when its contents match exactly.
+        [[ ${checksum%% *} == a961cfaabdb933484344a8500e8842e099a7997cac468c43800177597f9e54ac ]] || return 0
+    fi
+
+    cat > "$workdir/index.html" <<'EOF'
+<!doctype html>
+<html lang="zh-CN">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="description" content="在 Debian 或 Ubuntu 上安装 Python 3，运行 hello.py 并打印第一句 hello。">
+    <title>安装 Python，打印第一句 hello · 编程笔记</title>
+    <style>
+        :root {
+            color-scheme: light;
+            --paper: #f8f6ef;
+            --ink: #192720;
+            --soft-ink: #4b5c51;
+            --accent: #286049;
+            --line: #d6dbd1;
+            --terminal: #1d2c25;
+            --mono: ui-monospace, "SFMono-Regular", Consolas, monospace;
+        }
+        * { box-sizing: border-box; }
+        body {
+            margin: 0;
+            background: var(--paper);
+            color: var(--ink);
+            font: 1rem/1.8 system-ui, -apple-system, "PingFang SC", "Microsoft YaHei", sans-serif;
+        }
+        .wrap { width: min(100% - 3rem, 46rem); margin-inline: auto; }
+        .masthead { border-bottom: 1px solid var(--line); }
+        .masthead .wrap {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 1rem;
+            min-height: 4.25rem;
+        }
+        .brand { color: var(--ink); font-size: 1.0625rem; font-weight: 750; text-decoration: none; }
+        a { color: var(--accent); text-underline-offset: .24em; }
+        nav { display: flex; flex-wrap: wrap; gap: .25rem 1.25rem; font-size: .875rem; }
+        nav a { text-decoration: none; }
+        nav a:hover, .brand:hover { text-decoration: underline; }
+        .intro { padding: clamp(2.5rem, 7vw, 5rem) 0 2.25rem; }
+        h1, h2 { line-height: 1.25; margin: 0; }
+        h1 { font-size: clamp(2.1rem, 5.75vw, 4.25rem); font-weight: 780; letter-spacing: -.045em; }
+        h1 span { color: var(--accent); }
+        h2 { font-size: clamp(1.35rem, 3vw, 1.65rem); letter-spacing: -.025em; }
+        .intro p { margin: 1.2rem 0 0; font-size: 1.0625rem; }
+        p { margin: .8rem 0; color: var(--soft-ink); }
+        section { padding: 1.9rem 0; border-top: 1px solid var(--line); scroll-margin-top: 1rem; }
+        code { font-family: var(--mono); }
+        p code { padding: .12em .35em; border-radius: .25rem; background: #e8ece2; color: var(--ink); }
+        pre {
+            margin: .9rem 0;
+            padding: 1rem 1.2rem;
+            overflow-x: auto;
+            border-radius: .65rem;
+            background: var(--terminal);
+            color: #eff4e8;
+            font: .9375rem/1.75 var(--mono);
+        }
+        .string { color: #c1dfaa; }
+        .output { border: 1px solid var(--line); background: #edf1e8; color: var(--accent); }
+        footer { padding: 1.35rem 0 2.4rem; border-top: 1px solid var(--line); font-size: .875rem; }
+        @media (max-width: 32rem) {
+            .wrap { width: calc(100% - 2rem); }
+            .masthead .wrap { min-height: 3.5rem; }
+            nav { gap: .25rem .85rem; }
+            pre { padding: .85rem 1rem; font-size: .875rem; }
+        }
+    </style>
+</head>
+<body id="top">
+    <header class="masthead">
+        <div class="wrap">
+            <a class="brand" href="#top">编程笔记</a>
+            <nav aria-label="教程目录">
+                <a href="#install">安装 Python</a>
+                <a href="#run">运行示例</a>
+            </nav>
+        </div>
+    </header>
+    <main class="wrap">
+        <article aria-labelledby="title">
+            <header class="intro">
+                <h1 id="title">安装 Python<br>打印第一句 <span>hello</span></h1>
+                <p>这篇教程适用于 Debian 和 Ubuntu。打开终端，安装 Python 3，再写一个只有一行的程序。</p>
+            </header>
+            <section id="install">
+                <h2>安装 Python 3</h2>
+                <p>先运行 <code>python3 --version</code>。如果终端显示 Python 3 的版本号，就可以直接写代码。如果提示找不到命令，运行下面几行。用 root 登录时，去掉 <code>sudo</code>。</p>
+                <pre><code>sudo apt update
+sudo apt install python3
+python3 --version</code></pre>
+            </section>
+            <section id="write">
+                <h2>新建 hello.py</h2>
+                <p>用文本编辑器新建一个名为 <code>hello.py</code> 的文件，写入下面这行并保存。</p>
+                <pre><code>print(<span class="string">"hello"</span>)</code></pre>
+            </section>
+            <section id="run">
+                <h2>运行程序</h2>
+                <p>在终端进入 <code>hello.py</code> 所在的目录，执行下面的命令。</p>
+                <pre><code>python3 hello.py</code></pre>
+                <p>终端会输出这一行。</p>
+                <pre class="output"><samp>hello</samp></pre>
+            </section>
+        </article>
+        <footer><a href="https://docs.python.org/zh-cn/3/tutorial/interpreter.html">Python 官方教程 · 使用解释器</a></footer>
+    </main>
+</body>
+</html>
+EOF
+    install -m 0644 "$workdir/index.html" "$index_file"
+}
+
 verify_site() {
     local attempt response
     printf '等待 %s 的 HTTPS 证书和网页就绪…\n' "$domain"
@@ -168,23 +292,7 @@ main() {
     fi
 
     install -d -m 0755 "$WEB_ROOT"
-    if [[ ! -e "$WEB_ROOT/index.html" && ! -L "$WEB_ROOT/index.html" ]]; then
-        cat > "$workdir/index.html" <<'EOF'
-<!doctype html>
-<html lang="zh-CN">
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>站点首页</title>
-<body>
-    <main>
-        <h1>站点首页</h1>
-        <p>这个网站已启用 HTTPS。</p>
-    </main>
-</body>
-</html>
-EOF
-        install -m 0644 "$workdir/index.html" "$WEB_ROOT/index.html"
-    fi
+    install_default_page "$WEB_ROOT/index.html"
 
     if [[ -L "$PACKAGE_MASK" && $(readlink "$PACKAGE_MASK") == /dev/null ]]; then
         systemctl unmask caddy.service

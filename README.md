@@ -28,6 +28,6 @@ curl -fsSL https://raw.githubusercontent.com/nikolaSour/proxyfile/main/install.s
 
 ## 网页与服务
 
-- 首页位于 `/var/www/proxyfile/index.html`。可直接替换网页文件，用同一域名重跑安装会保留已有首页。
+- 默认首页是一篇 Python 入门教程，位于 `/var/www/proxyfile/index.html`。可直接替换该文件。用同一域名重跑安装可把原始默认页升级为博客，自定义首页会保留。
 - 站点配置位于 `/etc/caddy/proxyfile.Caddyfile`，服务使用 `caddy.service`。
 - 查看服务和证书日志可运行 `journalctl -u caddy.service -n 60 --no-pager`。
